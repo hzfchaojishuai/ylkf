@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>康养中日翻译工具</title>
+    <style>
+        body {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 0 20px;
+            font-family: Arial, sans-serif;
+        }
+        .qr-code {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .qr-code img {
+            width: 200px;
+            height: 200px;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #4299e1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            display: none;
+        }
+        #error {
+            color: red;
+            text-align: center;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align:center">康养场景中日翻译纠错工具</h1>
+    <div class="qr-code">
+        <img src="data:image/png;base64,{{ qr_code }}" alt="访问二维码">
+        <p>扫码访问：https://ylkf.us.ci</p>
+    </div>
+
+    <div class="form-group">
+        <select id="src_lang">
+            <option value="ja">日语 → 中文</option>
+            <option value="zh">中文 → 日语</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <textarea id="text" rows="5" placeholder="请输入翻译文本（如：介護、康复训练）"></textarea>
+    </div>
+    <button onclick="translate()">翻译并纠错</button>
+
+    <div id="error"></div>
+    <div id="result">
+        <h3>翻译结果：</h3>
+        <p><strong>原文：</strong><span id="original"></span></p>
+        <p><strong>译文：</strong><span id="translated"></span></p>
+    </div>
+
+    <script>
+        async function translate() {
+            const text = document.getElementById('text').value.trim();
+            const srcLang = document.getElementById('src_lang').value;
+            const tgtLang = srcLang === 'ja' ? 'zh' : 'ja';
+            const errorEl = document.getElementById('error');
+            const resultEl = document.getElementById('result');
+
+            errorEl.style.display = 'none';
+            resultEl.style.display = 'none';
+
+            if (!text) {
+                errorEl.textContent = '请输入翻译文本！';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/translate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, src_lang: srcLang, tgt_lang: tgtLang })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    document.getElementById('original').textContent = data.original_text;
+                    document.getElementById('translated').textContent = data.translated_text;
+                    resultEl.style.display = 'block';
+                } else {
+                    throw new Error(data.error || '翻译失败');
+                }
+            } catch (e) {
+                errorEl.textContent = e.message;
+                errorEl.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
